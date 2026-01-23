@@ -1,13 +1,153 @@
 <!DOCTYPE html>
-
-<html>
+<html lang="nl">
 <head>
-  <meta http-equiv="CONTENT-TYPE" content="text/html; charset=UTF-8">
-  <title>Hello, World!</title>
+    <meta charset="UTF-8">
+    <title>Playground Recherche</title>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    <style>
+        body { font-family: 'Courier New', Courier, monospace; background: #222; color: #0f0; text-align: center; }
+        #app { display: flex; flex-direction: column; align-items: center; padding: 20px; }
+        #game-board { position: relative; border: 4px solid #555; cursor: crosshair; }
+        #playground-img { max-width: 85vw; display: block; }
+        .ui-box { background: #333; padding: 15px; border-radius: 8px; margin-bottom: 10px; min-width: 400px; border: 1px solid #555; }
+        input { background: #000; color: #0f0; border: 1px solid #0f0; padding: 10px; width: 80%; font-size: 1.2em; }
+        #timer { font-size: 3em; font-weight: bold; color: #ff3e3e; margin: 10px 0; }
+        .hidden { display: none; }
+        .btn { background: #0f0; color: #000; padding: 10px 20px; border: none; cursor: pointer; font-weight: bold; margin: 5px; }
+        .target-btn { background: #444; color: white; }
+    </style>
 </head>
 <body>
-  <h1>
-    Hello, World!
-  </h1>
+
+    <h1>🚨 PLAYGROUND RECHERCHE 🚨</h1>
+
+    <div id="setup">
+        <div class="ui-box">
+            <h3>SELECTEER APPARAAT-MODUS</h3>
+            <button class="btn" onclick="startApp('observator')">UNIT 1: OBSERVATOR</button>
+            <button class="btn" onclick="startApp('zoeker')">UNIT 2: RECHERCHEUR</button>
+        </div>
+    </div>
+
+    <div id="app" class="hidden">
+        <div id="observator-ui" class="hidden" class="ui-box">
+            <h3>SELECTEER VERDACHTE</h3>
+            <button class="btn target-btn" onclick="kiesTarget(0)">Verdachte A</button>
+            <button class="btn target-btn" onclick="kiesTarget(1)">Verdachte B</button>
+            <button class="btn target-btn" onclick="kiesTarget(2)">Verdachte C</button>
+            <p>TYPE SIGNALEMENT:</p>
+            <input type="text" id="input-tekst" oninput="updateSignalement(this.value)" autocomplete="off">
+        </div>
+
+        <div id="zoeker-ui" class="hidden" class="ui-box">
+            <div id="timer">3.0</div>
+            <div id="bericht" style="font-size: 1.5em; min-height: 1.5em;">Wachten op info...</div>
+        </div>
+
+        <div id="game-board">
+            <img src="speeltuin.jpg" id="playground-img" onclick="checkKlik(event)">
+        </div>
+    </div>
+
+<script>
+    // 1. JOUW FIREBASE CONFIG (Vul hier je eigen data in!)
+    const firebaseConfig = {
+        apiKey: "AIza...",
+        databaseURL: "https://jouw-project.firebaseio.com",
+        projectId: "jouw-project",
+        appId: "1:..."
+    };
+    
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+    const gameRef = db.ref('playground_recherche');
+
+    // 2. TARGET DATA (Pas de X en Y aan op basis van je foto)
+    const targets = [
+        { id: 0, x: 120, y: 350, naam: "A" },
+        { id: 1, x: 580, y: 210, naam: "B" },
+        { id: 2, x: 800, y: 450, naam: "C" }
+    ];
+
+    let huidigeRol = '';
+    let actiefTargetIndex = -1;
+    let timerRunning = false;
+    let timer;
+
+    function startApp(rol) {
+        huidigeRol = rol;
+        document.getElementById('setup').classList.add('hidden');
+        document.getElementById('app').classList.remove('hidden');
+        if(rol === 'observator') {
+            document.getElementById('observator-ui').classList.remove('hidden');
+        } else {
+            document.getElementById('zoeker-ui').classList.remove('hidden');
+            luisterNaarRecherche();
+        }
+    }
+
+    // --- OBSERVATOR FUNCTIES ---
+    function kiesTarget(index) {
+        actiefTargetIndex = index;
+        gameRef.update({ targetId: index, tekst: "", start: false });
+        document.getElementById('input-tekst').value = "";
+        document.getElementById('input-tekst').focus();
+    }
+
+    function updateSignalement(v) {
+        if(actiefTargetIndex === -1) return;
+        gameRef.update({ tekst: v, start: true, timestamp: Date.now() });
+    }
+
+    // --- RECHERCHEUR FUNCTIES ---
+    function luisterNaarRecherche() {
+        gameRef.on('value', (snap) => {
+            const data = snap.val();
+            if(!data) return;
+            
+            document.getElementById('bericht').innerText = data.tekst;
+            actiefTargetIndex = data.targetId;
+
+            if(data.start && !timerRunning) {
+                runTimer();
+            }
+        });
+    }
+
+    function runTimer() {
+        timerRunning = true;
+        let t = 3.0;
+        clearInterval(timer);
+        timer = setInterval(() => {
+            t -= 0.1;
+            document.getElementById('timer').innerText = t.toFixed(1);
+            if(t <= 0) {
+                clearInterval(timer);
+                timerRunning = false;
+                alert("DOELWIT ONTSNAPT! Probeer opnieuw.");
+                gameRef.update({ start: false, tekst: "" });
+            }
+        }, 100);
+    }
+
+    function checkKlik(e) {
+        if(huidigeRol !== 'zoeker' || !timerRunning) return;
+
+        const rect = e.target.getBoundingClientRect();
+        const klikX = e.clientX - rect.left;
+        const klikY = e.clientY - rect.top;
+        
+        const doel = targets[actiefTargetIndex];
+        const afstand = Math.sqrt(Math.pow(klikX - doel.x, 2) + Math.pow(klikY - doel.y, 2));
+
+        if(afstand < 60) { // Straal van 60 pixels
+            clearInterval(timer);
+            timerRunning = false;
+            alert("VERDACHTE IN REKENING GEBRACHT! Goed werk.");
+            gameRef.update({ start: false, tekst: "GEVONDEN!" });
+        }
+    }
+</script>
 </body>
 </html>
