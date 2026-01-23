@@ -2,57 +2,175 @@
 <html lang="nl">
 <head>
     <meta charset="UTF-8">
-    <title>Opsporing Vermist Kind - Politie Eenheid</title>
+    <title>Opsporing Vermist Kind</title>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
     <style>
         body { 
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
-            background-color: #191970 !important; 
-            color: #ffffff; 
+            font-family: sans-serif; 
+            background-color: #191970; 
+            color: white; 
             text-align: center; 
-            margin: 0; 
             padding: 20px; 
         }
-        
-        h1 { text-shadow: 2px 2px #000; letter-spacing: 2px; }
-
-        #game-board { 
-            position: relative; 
-            display: inline-block; 
-            margin-top: 20px; 
-            border: 6px solid #f0f0f0; 
-            background: #000;
-            max-width: 95vw;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-        }
-
-        #playground-img { 
-            display: block; 
-            width: 100%; 
-            height: auto; 
-            cursor: crosshair; 
-            min-width: 600px; /* Zorgt dat de foto ruimte inneemt */
-        }
-
         .ui-box { 
-            background: rgba(255, 255, 255, 0.1); 
+            background: rgba(255,255,255,0.1); 
             padding: 20px; 
-            border-radius: 12px; 
-            margin-bottom: 20px; 
-            border: 1px solid rgba(255,255,255,0.3); 
-            display: inline-block; 
-            min-width: 350px; 
-            backdrop-filter: blur(5px);
+            border-radius: 10px; 
+            display: inline-block;
+            border: 1px solid white;
         }
-
-        input { 
-            background: #ffffff; color: #191970; border: none; padding: 15px; 
-            width: 85%; font-size: 1.1em; margin-top: 10px; border-radius: 5px; font-weight: bold;
-        }
-        
-        #timer { font-size: 4em; font-weight: bold; color: #ff4747; text-shadow: 3px 3px #000; font-family: 'Courier New', monospace; }
-        .hidden { display: none !important; }
-        
         .btn { 
-            background: #ffd700; color: #000; padding: 12px 20px; border: none;
+            background: #ffd700; 
+            color: black; 
+            padding: 10px 20px; 
+            margin: 5px; 
+            border: none; 
+            border-radius: 5px; 
+            cursor: pointer; 
+            font-weight: bold;
+        }
+        .target-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; }
+        .hidden { display: none; }
+        #playground-img { max-width: 90vw; border: 5px solid white; margin-top: 20px; }
+        #timer { font-size: 3em; color: #ff4747; font-family: monospace; }
+    </style>
+</head>
+<body>
+
+    <h1>OPSPORING VERMIST KIND</h1>
+
+    <div id="setup">
+        <div class="ui-box">
+            <h3>SYSTEEM LOGIN</h3>
+            <button class="btn" onclick="startApp('collega')">UNIT 1: COLLEGA</button>
+            <button class="btn" onclick="startApp('verbalisant')">UNIT 2: VERBALISANT</button>
+        </div>
+    </div>
+
+    <div id="app" class="hidden">
+        <div id="collega-ui" class="hidden">
+            <div class="ui-box">
+                <h3>KIES KIND</h3>
+                <div class="target-grid">
+                    <button class="btn" onclick="kiesTarget(0)">Meisje Glijbaan</button>
+                    <button class="btn" onclick="kiesTarget(1)">Dinosaurus</button>
+                    <button class="btn" onclick="kiesTarget(2)">Blauwe Pet</button>
+                    <button class="btn" onclick="kiesTarget(3)">Jongen Klimrek</button>
+                </div>
+                <input type="text" id="input-tekst" oninput="updateSignalement(this.value)" placeholder="Typ kenmerken...">
+            </div>
+        </div>
+
+        <div id="verbalisant-ui" class="hidden">
+            <div class="ui-box">
+                <div id="timer">3.0</div>
+                <div id="bericht">Wachten op collega...</div>
+            </div>
+        </div>
+
+        <div id="game-board">
+            <img src="speeltuin.jpg" id="playground-img" onclick="checkKlik(event)">
+        </div>
+    </div>
+
+<script>
+    // --- FIREBASE CONFIG ---
+    const firebaseConfig = {
+        apiKey: "AIzaSyBOo2LzR1IBnsiBR2SCwPJABtaRv0tpKQ4",
+        authDomain: "speeltuin-recherche.firebaseapp.com",
+        databaseURL: "https://speeltuin-recherche-default-rtdb.europe-west1.firebasedatabase.app/", 
+        projectId: "speeltuin-recherche",
+        appId: "1:499912834123:web:3c84cbf4d5eb13131961ce"
+    };
+    
+    // START FIREBASE
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+    const gameRef = db.ref('playground_recherche');
+
+    const targets = [
+        { id: 0, x: 120, y: 620 },
+        { id: 1, x: 330, y: 560 },
+        { id: 2, x: 630, y: 750 },
+        { id: 3, x: 210, y: 480 }
+    ];
+
+    let huidigeRol = '';
+    let actiefTargetIndex = -1;
+    let timerRunning = false;
+    let countdown;
+
+    function startApp(rol) {
+        huidigeRol = rol;
+        document.getElementById('setup').style.display = 'none';
+        document.getElementById('app').classList.remove('hidden');
+        if(rol === 'collega') {
+            document.getElementById('collega-ui').classList.remove('hidden');
+        } else {
+            document.getElementById('verbalisant-ui').classList.remove('hidden');
+            luisterNaarUpdates();
+        }
+    }
+
+    function kiesTarget(index) {
+        actiefTargetIndex = index;
+        gameRef.set({ targetId: index, tekst: "", start: false });
+    }
+
+    function updateSignalement(v) {
+        if(actiefTargetIndex === -1) return;
+        gameRef.update({ tekst: v, start: true });
+    }
+
+    function luisterNaarUpdates() {
+        gameRef.on('value', (snap) => {
+            const data = snap.val();
+            if(!data) return;
+            document.getElementById('bericht').innerText = data.tekst || "Wachten...";
+            actiefTargetIndex = data.targetId;
+            if(data.start && !timerRunning) startTimer();
+            if(!data.start) resetTimerUI();
+        });
+    }
+
+    function startTimer() {
+        timerRunning = true;
+        let t = 3.0;
+        clearInterval(countdown);
+        countdown = setInterval(() => {
+            t -= 0.1;
+            document.getElementById('timer').innerText = t.toFixed(1);
+            if(t <= 0) stopSpel("TIJD OM!");
+        }, 100);
+    }
+
+    function resetTimerUI() {
+        clearInterval(countdown);
+        timerRunning = false;
+        document.getElementById('timer').innerText = "3.0";
+    }
+
+    function stopSpel(m) {
+        clearInterval(countdown);
+        timerRunning = false;
+        alert(m);
+        gameRef.update({ start: false, tekst: "" });
+    }
+
+    function checkKlik(event) {
+        if(huidigeRol !== 'verbalisant' || !timerRunning) return;
+        const img = document.getElementById('playground-img');
+        const rect = img.getBoundingClientRect();
+        const scaleX = img.naturalWidth / rect.width;
+        const scaleY = img.naturalHeight / rect.height;
+        const klikX = (event.clientX - rect.left) * scaleX;
+        const klikY = (event.clientY - rect.top) * scaleY;
+        
+        const doel = targets[actiefTargetIndex];
+        const afstand = Math.sqrt(Math.pow(klikX - doel.x, 2) + Math.pow(klikY - doel.y, 2));
+        if(afstand < 120) stopSpel("GEVONDEN!");
+    }
+</script>
+</body>
+</html>
