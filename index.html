@@ -10,7 +10,10 @@
         .ui-box { background: rgba(255,255,255,0.1); padding: 20px; border-radius: 10px; display: inline-block; border: 1px solid white; min-width: 350px; }
         .btn { background: #ffd700; color: black; padding: 12px 20px; margin: 5px; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; text-transform: uppercase; }
         .target-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px; }
-        .hidden { display: none; }
+        
+        /* Zorg dat hidden echt alles verbergt */
+        .hidden { display: none !important; }
+        
         #playground-img { max-width: 90vw; border: 5px solid white; margin-top: 20px; cursor: crosshair; }
         #timer { font-size: 3em; color: #ff4747; font-family: monospace; font-weight: bold; }
         #bericht-venster { background: rgba(0,0,0,0.5); padding: 15px; border-radius: 5px; color: #00ff00; font-size: 1.3em; min-height: 1.5em; margin-top: 10px; border: 1px solid #00ff00; }
@@ -21,15 +24,15 @@
 
     <h1>OPSPORING VERMIST KIND</h1>
 
-    <div id="setup">
+    <div id="setup-section">
         <div class="ui-box">
             <h3>SYSTEEM LOGIN</h3>
-            <button class="btn" onclick="startApp('verbalisant')">UNIT 1: VERBALISANT (Melder)</button>
+            <button class="btn" onclick="startApp('verbalisant')">UNIT 1: VERBALISANT (Schrijver)</button>
             <button class="btn" onclick="startApp('collega')">UNIT 2: COLLEGA (Zoeker)</button>
         </div>
     </div>
 
-    <div id="app" class="hidden">
+    <div id="main-app" class="hidden">
         
         <div id="verbalisant-ui" class="hidden">
             <div class="ui-box">
@@ -79,12 +82,18 @@
     const db = firebase.database();
     const gameRef = db.ref('playground_recherche');
 
+    // Coördinaten voor de nieuwe AI speeltuin foto (bij benadering)
     const targets = [
-        { id: 0, x: 120, y: 620 }, { id: 1, x: 330, y: 560 },
-        { id: 2, x: 630, y: 750 }, { id: 3, x: 210, y: 480 },
-        { id: 4, x: 440, y: 510 }, { id: 5, x: 570, y: 510 },
-        { id: 6, x: 790, y: 530 }, { id: 7, x: 930, y: 550 },
-        { id: 8, x: 680, y: 820 }, { id: 9, x: 800, y: 410 }
+        { id: 0, x: 670, y: 440 }, // Meisje Glijbaan
+        { id: 1, x: 180, y: 750 }, // Dinosaurus (Wipkip links)
+        { id: 2, x: 170, y: 680 }, // Blauwe Pet (Jongen links onder)
+        { id: 3, x: 700, y: 350 }, // Jongen bovenop klimrek
+        { id: 4, x: 550, y: 750 }, // Draaimolen L
+        { id: 5, x: 700, y: 750 }, // Draaimolen R
+        { id: 6, x: 150, y: 530 }, // Wipwap L
+        { id: 7, x: 300, y: 510 }, // Wipwap R
+        { id: 8, x: 350, y: 680 }, // Zandbak Rood
+        { id: 9, x: 450, y: 250 }  // Boom Achter
     ];
 
     let huidigeRol = '';
@@ -94,12 +103,16 @@
 
     function startApp(rol) {
         huidigeRol = rol;
-        document.getElementById('setup').classList.add('hidden');
-        document.getElementById('app').classList.remove('hidden');
+        // Verberg setup, toon main app
+        document.getElementById('setup-section').classList.add('hidden');
+        document.getElementById('main-app').classList.remove('hidden');
+        
         if(rol === 'verbalisant') {
             document.getElementById('verbalisant-ui').classList.remove('hidden');
+            document.getElementById('collega-ui').classList.add('hidden');
         } else {
             document.getElementById('collega-ui').classList.remove('hidden');
+            document.getElementById('verbalisant-ui').classList.add('hidden');
             luisterNaarUpdates();
         }
     }
@@ -121,4 +134,60 @@
     }
 
     function luisterNaarUpdates() {
-        gameRef.on('value',
+        gameRef.on('value', (snap) => {
+            const data = snap.val();
+            if(!data) return;
+            if(data.tekst) {
+                document.getElementById('bericht-venster').innerText = "SIGNALEMENT: " + data.tekst;
+            } else {
+                document.getElementById('bericht-venster').innerText = "Wachten op signalement...";
+            }
+            actiefTargetIndex = data.targetId;
+            if(data.start && !timerRunning) startTimer();
+            if(!data.start) resetTimerUI();
+        });
+    }
+
+    function startTimer() {
+        timerRunning = true;
+        let t = 3.0;
+        clearInterval(countdown);
+        countdown = setInterval(() => {
+            t -= 0.1;
+            document.getElementById('timer').innerText = t.toFixed(1);
+            if(t <= 0) stopSpel("TIJD OM! Kind niet gevonden.");
+        }, 100);
+    }
+
+    function resetTimerUI() {
+        clearInterval(countdown);
+        timerRunning = false;
+        document.getElementById('timer').innerText = "3.0";
+    }
+
+    function stopSpel(m) {
+        clearInterval(countdown);
+        timerRunning = false;
+        alert(m);
+        gameRef.update({ start: false, tekst: "" });
+        if(huidigeRol === 'verbalisant') document.getElementById('input-tekst').value = "";
+    }
+
+    function checkKlik(event) {
+        if(huidigeRol !== 'collega' || !timerRunning) return;
+        const img = document.getElementById('playground-img');
+        const rect = img.getBoundingClientRect();
+        const scaleX = img.naturalWidth / rect.width;
+        const scaleY = img.naturalHeight / rect.height;
+        const klikX = (event.clientX - rect.left) * scaleX;
+        const klikY = (event.clientY - rect.top) * scaleY;
+        
+        const doel = targets[actiefTargetIndex];
+        const afstand = Math.sqrt(Math.pow(klikX - doel.x, 2) + Math.pow(klikY - doel.y, 2));
+        
+        // Straal iets ruimer (150) omdat AI foto's drukker zijn
+        if(afstand < 150) stopSpel("GEVONDEN! Kind is veilig gesteld.");
+    }
+</script>
+</body>
+</html>
