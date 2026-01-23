@@ -120,4 +120,48 @@
         gameRef.on('value', (snap) => {
             const data = snap.val();
             if(!data) return;
-            if(data.tekst) document.getElementById('bericht-
+            if(data.tekst) document.getElementById('bericht-venster').innerText = "SIGNALEMENT: " + data.tekst;
+            actiefTargetIndex = data.targetId;
+            if(data.start && !timerRunning) startTimer();
+            if(!data.start) resetTimerUI();
+        });
+    }
+
+    function startTimer() {
+        timerRunning = true;
+        let t = SPEL_TIJD;
+        countdown = setInterval(() => {
+            t -= 0.1;
+            document.getElementById('timer').innerText = t.toFixed(1);
+            if(t <= 0) stopSpel("TE LAAT!");
+        }, 100);
+    }
+
+    function resetTimerUI() {
+        clearInterval(countdown);
+        timerRunning = false;
+        document.getElementById('timer').innerText = SPEL_TIJD.toFixed(1);
+    }
+
+    function stopSpel(m) {
+        clearInterval(countdown);
+        timerRunning = false;
+        alert(m);
+        gameRef.update({ start: false, tekst: "" });
+    }
+
+    function checkKlik(event) {
+        if(huidigeRol !== 'collega' || !timerRunning) return;
+        const img = document.getElementById('playground-img');
+        const rect = img.getBoundingClientRect();
+        const scaleX = img.naturalWidth / rect.width;
+        const scaleY = img.naturalHeight / rect.height;
+        const klikX = (event.clientX - rect.left) * scaleX;
+        const klikY = (event.clientY - rect.top) * scaleY;
+        const doel = targets[actiefTargetIndex];
+        const afstand = Math.sqrt(Math.pow(klikX - doel.x, 2) + Math.pow(klikY - doel.y, 2));
+        if(afstand < 150) stopSpel("GEVONDEN!");
+    }
+</script>
+</body>
+</html>
