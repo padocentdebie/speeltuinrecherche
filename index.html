@@ -6,14 +6,16 @@
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
     <style>
-        body { font-family: sans-serif; background-color: #191970; color: white; text-align: center; padding: 20px; margin: 0; }
-        .ui-box { background: rgba(255,255,255,0.1); padding: 20px; border-radius: 10px; display: inline-block; border: 1px solid white; min-width: 350px; margin-bottom: 20px; }
-        .btn { background: #ffd700; color: black; padding: 12px 20px; margin: 5px; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; }
-        .target-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-        #playground-img { max-width: 95vw; border: 5px solid white; margin-top: 20px; cursor: crosshair; display: block; margin-left: auto; margin-right: auto; }
-        #timer { font-size: 3em; color: #ff4747; font-family: monospace; font-weight: bold; }
-        #bericht-venster { background: rgba(0,0,0,0.5); padding: 15px; border-radius: 5px; color: #00ff00; font-size: 1.3em; margin-top: 10px; border: 1px solid #00ff00; min-height: 40px; }
-        input { padding: 12px; width: 80%; font-size: 1.1em; border-radius: 5px; margin-bottom: 10px; }
+        body { font-family: 'Segoe UI', Arial, sans-serif; background-color: #191970; color: white; text-align: center; padding: 20px; margin: 0; }
+        .ui-box { background: rgba(255,255,255,0.1); padding: 20px; border-radius: 10px; display: inline-block; border: 1px solid white; min-width: 380px; margin-bottom: 20px; backdrop-filter: blur(5px); }
+        .btn { background: #ffd700; color: black; padding: 12px 20px; margin: 5px; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; text-transform: uppercase; }
+        .btn:hover { background: #ffcc00; }
+        .target-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 15px; }
+        #playground-img { max-width: 95vw; border: 5px solid white; margin-top: 20px; cursor: crosshair; display: block; margin-left: auto; margin-right: auto; box-shadow: 0 0 20px rgba(0,0,0,0.5); }
+        #timer { font-size: 4em; color: #ff4747; font-family: 'Courier New', monospace; font-weight: bold; text-shadow: 2px 2px black; }
+        #bericht-venster { background: rgba(0,0,0,0.7); padding: 20px; border-radius: 5px; color: #00ff00; font-size: 1.5em; margin-top: 10px; border: 2px solid #00ff00; min-height: 50px; font-weight: bold; }
+        input { padding: 15px; width: 85%; font-size: 1.1em; border-radius: 5px; border: none; margin-bottom: 10px; font-weight: bold; }
+        .hidden { display: none !important; }
     </style>
 </head>
 <body>
@@ -23,16 +25,17 @@
     <div id="setup-section">
         <div class="ui-box">
             <h3>SYSTEEM LOGIN</h3>
+            <p>Kies je eenheid:</p>
             <button class="btn" onclick="startApp('verbalisant')">UNIT 1: VERBALISANT (Schrijver)</button>
             <button class="btn" onclick="startApp('collega')">UNIT 2: COLLEGA (Zoeker)</button>
         </div>
     </div>
 
-    <div id="main-app" style="display: none;">
+    <div id="main-app" class="hidden">
         
-        <div id="verbalisant-ui" style="display: none;">
+        <div id="verbalisant-ui" class="hidden">
             <div class="ui-box">
-                <h3>STAP 1: KIES HET KIND</h3>
+                <h3>STAP 1: KIES HET DOELWIT</h3>
                 <div class="target-grid">
                     <button class="btn" onclick="kiesTarget(0, 'Glijbaan')">Glijbaan</button>
                     <button class="btn" onclick="kiesTarget(1, 'Wipkip')">Wipkip</button>
@@ -45,18 +48,18 @@
                     <button class="btn" onclick="kiesTarget(8, 'Zandbak')">Zandbak</button>
                     <button class="btn" onclick="kiesTarget(9, 'Boom')">Boom</button>
                 </div>
-                <h3>STAP 2: TYP SIGNALEMENT</h3>
-                <input type="text" id="input-tekst" placeholder="Beschrijf kleding/locatie...">
+                <h3>STAP 2: TYP HET SIGNALEMENT</h3>
+                <input type="text" id="input-tekst" placeholder="Kleur jas, haar, locatie...">
                 <br>
-                <button class="btn" style="background: #00ff00;" onclick="verstuurBericht()">VERSTUUR SIGNALEMENT</button>
-                <p id="status-bericht" style="color: #ffd700;"></p>
+                <button class="btn" style="background: #00ff00; width: 90%;" onclick="verstuurBericht()">VERSTUUR NAAR COLLEGA</button>
+                <p id="status-bericht" style="color: #ffd700; font-weight: bold; margin-top: 10px;"></p>
             </div>
         </div>
 
-        <div id="collega-ui" style="display: none;">
+        <div id="collega-ui" class="hidden">
             <div class="ui-box">
-                <div id="timer">3.0</div>
-                <div id="bericht-venster">Wachten op verbalisant...</div>
+                <div id="timer">10.0</div>
+                <div id="bericht-venster">WACHTEN OP SIGNALEMENT...</div>
             </div>
         </div>
 
@@ -66,7 +69,9 @@
     </div>
 
 <script>
-    // --- FIREBASE CONFIG ---
+    // --- CONFIGURATIE ---
+    const SPEL_TIJD = 10.0; // Hier kun je de tijd aanpassen (bijv. 15.0 of 20.0)
+
     const firebaseConfig = {
         apiKey: "AIzaSyBOo2LzR1IBnsiBR2SCwPJABtaRv0tpKQ4",
         authDomain: "speeltuin-recherche.firebaseapp.com",
@@ -75,104 +80,11 @@
         appId: "1:499912834123:web:3c84cbf4d5eb13131961ce"
     };
     
-    // Initialiseer Firebase direct
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
     const gameRef = db.ref('playground_recherche');
 
-    // Coordinaten
+    // Coordinaten van de 10 kinderen op de AI foto
     const targets = [
         { x: 670, y: 440 }, { x: 180, y: 750 }, { x: 170, y: 680 }, { x: 700, y: 350 },
-        { x: 550, y: 750 }, { x: 700, y: 750 }, { x: 150, y: 530 }, { x: 300, y: 510 },
-        { x: 350, y: 680 }, { x: 450, y: 250 }
-    ];
-
-    let huidigeRol = '';
-    let actiefTargetIndex = -1;
-    let timerRunning = false;
-    let countdown;
-
-    function startApp(rol) {
-        huidigeRol = rol;
-        document.getElementById('setup-section').style.display = 'none';
-        document.getElementById('main-app').style.display = 'block';
-        
-        if(rol === 'verbalisant') {
-            document.getElementById('verbalisant-ui').style.display = 'block';
-            document.getElementById('collega-ui').style.display = 'none';
-        } else {
-            document.getElementById('collega-ui').style.display = 'block';
-            document.getElementById('verbalisant-ui').style.display = 'none';
-            luisterNaarUpdates();
-        }
-    }
-
-    function kiesTarget(index, naam) {
-        actiefTargetIndex = index;
-        document.getElementById('status-bericht').innerText = "Geselecteerd: " + naam;
-        gameRef.update({ targetId: index, start: false });
-    }
-
-    function verstuurBericht() {
-        const tekst = document.getElementById('input-tekst').value;
-        if(actiefTargetIndex === -1) {
-            alert("Kies eerst een kind op de knoppen hierboven!");
-            return;
-        }
-        gameRef.update({ tekst: tekst, start: true });
-        document.getElementById('status-bericht').innerText = "SIGNALEMENT VERSTUURD!";
-    }
-
-    function luisterNaarUpdates() {
-        gameRef.on('value', (snap) => {
-            const data = snap.val();
-            if(!data) return;
-            if(data.tekst) {
-                document.getElementById('bericht-venster').innerText = "MELDING: " + data.tekst;
-            }
-            actiefTargetIndex = data.targetId;
-            if(data.start && !timerRunning) startTimer();
-            if(!data.start) resetTimerUI();
-        });
-    }
-
-    function startTimer() {
-        timerRunning = true;
-        let t = 3.0;
-        clearInterval(countdown);
-        countdown = setInterval(() => {
-            t -= 0.1;
-            document.getElementById('timer').innerText = t.toFixed(1);
-            if(t <= 0) stopSpel("TE LAAT! Het kind is weg.");
-        }, 100);
-    }
-
-    function resetTimerUI() {
-        clearInterval(countdown);
-        timerRunning = false;
-        document.getElementById('timer').innerText = "3.0";
-    }
-
-    function stopSpel(m) {
-        clearInterval(countdown);
-        timerRunning = false;
-        alert(m);
-        gameRef.update({ start: false, tekst: "" });
-    }
-
-    function checkKlik(event) {
-        if(huidigeRol !== 'collega' || !timerRunning) return;
-        const img = document.getElementById('playground-img');
-        const rect = img.getBoundingClientRect();
-        const scaleX = img.naturalWidth / rect.width;
-        const scaleY = img.naturalHeight / rect.height;
-        const klikX = (event.clientX - rect.left) * scaleX;
-        const klikY = (event.clientY - rect.top) * scaleY;
-        
-        const doel = targets[actiefTargetIndex];
-        const afstand = Math.sqrt(Math.pow(klikX - doel.x, 2) + Math.pow(klikY - doel.y, 2));
-        if(afstand < 150) stopSpel("GOED GEDAAN! Kind gevonden.");
-    }
-</script>
-</body>
-</html>
+        { x: 550, y: 750
