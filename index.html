@@ -111,10 +111,24 @@
 <script>
     // --- FIREBASE CONFIG ---
     const firebaseConfig = {
-        apiKey: "JOUW_API_KEY",
-        databaseURL: "https://JOUW_PROJECT.firebaseio.com",
-        projectId: "JOUW_PROJECT",
-        appId: "JOUW_APP_ID"
+        // Import the functions you need from the SDKs you need
+import { initializeApp } from "firebase/app";
+// TODO: Add SDKs for Firebase products that you want to use
+// https://firebase.google.com/docs/web/setup#available-libraries
+
+// Your web app's Firebase configuration
+const firebaseConfig = {
+  apiKey: "AIzaSyBOo2LzR1IBnsiBR2SCwPJABtaRv0tpKQ4",
+  authDomain: "speeltuin-recherche.firebaseapp.com",
+    databaseURL:"https://console.firebase.google.com/u/0/project/speeltuin-recherche/database/speeltuin-recherche-default-rtdb/data/~2F?fb_gclid=Cj0KCQiA1czLBhDhARIsAIEc7uiUHljphc37N8guYDRZFoFZM5CkHtRylV2un8FgQJ4Ir3fXqDhLNfUaAnABEALw_wcB&fb_utm_campaign=Cloud-SS-DR-Firebase-FY26-global-gsem-1713590&fb_utm_content=text-ad&fb_utm_medium=cpc&fb_utm_source=google&fb_utm_term=KW_firebase%20console"
+  projectId: "speeltuin-recherche",
+  storageBucket: "speeltuin-recherche.firebasestorage.app",
+  messagingSenderId: "499912834123",
+  appId: "1:499912834123:web:3c84cbf4d5eb13131961ce"
+};
+
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
     };
     
     firebase.initializeApp(firebaseConfig);
