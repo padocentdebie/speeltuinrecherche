@@ -8,7 +8,7 @@
     <style>
         body { 
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
-            background-color: #191970; /* Politieblauw */
+            background-color: #191970 !important; /* Politieblauw forceer */
             color: #ffffff; 
             text-align: center; 
             margin: 0; 
@@ -27,7 +27,7 @@
             box-shadow: 0 10px 30px rgba(0,0,0,0.5);
         }
 
-        #playground-img { display: block; width: 100%; height: auto; cursor: crosshair; }
+        #playground-img { display: block; width: 100%; height: auto; cursor: crosshair; min-height: 300px; }
 
         .ui-box { 
             background: rgba(255, 255, 255, 0.1); 
@@ -62,7 +62,7 @@
 </head>
 <body>
 
-    <h1> OPSPORING VERMIST KIND </h1>
+    <h1>👮 OPSPORING VERMIST KIND 👮</h1>
 
     <div id="setup">
         <div class="ui-box">
@@ -109,28 +109,19 @@
     </div>
 
 <script>
-    // --- FIREBASE CONFIG ---
+    // --- GEHERSTELDE FIREBASE CONFIG ---
     const firebaseConfig = {
-        // Import the functions you need from the SDKs you need
-import { initializeApp } from "firebase/app";
-// TODO: Add SDKs for Firebase products that you want to use
-// https://firebase.google.com/docs/web/setup#available-libraries
-
-// Your web app's Firebase configuration
-const firebaseConfig = {
-  apiKey: "AIzaSyBOo2LzR1IBnsiBR2SCwPJABtaRv0tpKQ4",
-  authDomain: "speeltuin-recherche.firebaseapp.com",
-  databaseURL:"https://console.firebase.google.com/u/0/project/speeltuin-recherche/database/speeltuin-recherche-default-rtdb/data/~2F?fb_gclid=Cj0KCQiA1czLBhDhARIsAIEc7uiUHljphc37N8guYDRZFoFZM5CkHtRylV2un8FgQJ4Ir3fXqDhLNfUaAnABEALw_wcB&fb_utm_campaign=Cloud-SS-DR-Firebase-FY26-global-gsem-1713590&fb_utm_content=text-ad&fb_utm_medium=cpc&fb_utm_source=google&fb_utm_term=KW_firebase%20console",
-  projectId: "speeltuin-recherche",
-  storageBucket: "speeltuin-recherche.firebasestorage.app",
-  messagingSenderId: "499912834123",
-  appId: "1:499912834123:web:3c84cbf4d5eb13131961ce"
-};
-
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
+        apiKey: "AIzaSyBOo2LzR1IBnsiBR2SCwPJABtaRv0tpKQ4",
+        authDomain: "speeltuin-recherche.firebaseapp.com",
+        // DE JUISTE DATABASE URL:
+        databaseURL: "https://speeltuin-recherche-default-rtdb.europe-west1.firebasedatabase.app/", 
+        projectId: "speeltuin-recherche",
+        storageBucket: "speeltuin-recherche.firebasestorage.app",
+        messagingSenderId: "499912834123",
+        appId: "1:499912834123:web:3c84cbf4d5eb13131961ce"
     };
     
+    // Initialisatie (deze manier werkt met de scripts in de head)
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
     const gameRef = db.ref('playground_recherche');
@@ -214,19 +205,25 @@ const app = initializeApp(firebaseConfig);
     }
 
     function checkKlik(event) {
-        const rect = document.getElementById('playground-img').getBoundingClientRect();
-        const klikX = (event.clientX - rect.left) * (document.getElementById('playground-img').naturalWidth / rect.width);
-        const klikY = (event.clientY - rect.top) * (document.getElementById('playground-img').naturalHeight / rect.height);
+        const img = document.getElementById('playground-img');
+        const rect = img.getBoundingClientRect();
+        
+        // Berekening gecorrigeerd voor schaling van de afbeelding
+        const scaleX = img.naturalWidth / rect.width;
+        const scaleY = img.naturalHeight / rect.height;
+        
+        const klikX = (event.clientX - rect.left) * scaleX;
+        const klikY = (event.clientY - rect.top) * scaleY;
 
         if(huidigeRol !== 'verbalisant' || !timerRunning) {
-            console.log("LOCATIE CHECK - X:", Math.round(klikX), "Y:", Math.round(klikY));
+            console.log("DEBUG - X:", Math.round(klikX), "Y:", Math.round(klikY));
             return;
         }
         
         const doel = targets[actiefTargetIndex];
         const afstand = Math.sqrt(Math.pow(klikX - doel.x, 2) + Math.pow(klikY - doel.y, 2));
 
-        if(afstand < 100) {
+        if(afstand < 120) { // lets iets ruimer gepakt voor gemak
             stopSpel("GEVONDEN! Het kind is veilig gesteld door de verbalisant.");
         }
     }
