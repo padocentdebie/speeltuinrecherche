@@ -2,60 +2,68 @@
 <html lang="nl">
 <head>
     <meta charset="UTF-8">
-    <title>Opsporing Vermist Kind</title>
+    <title>POLITIE OPSPORING - Beveiligde Unit Login</title>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
     <style>
-        body { font-family: 'Segoe UI', sans-serif; background-color: #191970; color: white; text-align: center; padding: 20px; margin: 0; }
-        .ui-box { background: rgba(255,255,255,0.1); padding: 20px; border-radius: 10px; display: inline-block; border: 1px solid white; min-width: 350px; }
-        .btn { background: #ffd700; color: black; padding: 12px 20px; margin: 5px; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; text-transform: uppercase; }
-        .target-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px; }
+        body { font-family: 'Segoe UI', sans-serif; background-color: #001a33; color: white; text-align: center; padding: 20px; margin: 0; }
+        .ui-box { background: rgba(0, 40, 80, 0.8); padding: 20px; border-radius: 10px; display: inline-block; border: 2px solid #005ce6; min-width: 350px; margin-bottom: 20px; box-shadow: 0 0 15px rgba(0, 92, 230, 0.5); }
+        
+        h1::before, h1::after { content: "🟦"; animation: flash 0.8s infinite; }
+        @keyframes flash { 0% { opacity: 1; } 50% { opacity: 0.3; } 100% { opacity: 1; } }
+
+        .btn { background: #ffd700; color: #001a33; padding: 10px 15px; margin: 3px; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; text-transform: uppercase; font-size: 0.85em; }
+        .btn-time { background: #003366; color: white; border: 1px solid #005ce6; width: 60px; }
+        .btn-active { background: #005ce6 !important; color: white; }
+        
+        .target-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 15px; }
         .hidden { display: none !important; }
-        #playground-img { max-width: 95vw; border: 5px solid white; margin-top: 20px; cursor: crosshair; }
-        #timer { font-size: 3em; color: #ff4747; font-family: monospace; font-weight: bold; }
-        #bericht-venster { background: rgba(0,0,0,0.5); padding: 15px; border-radius: 5px; color: #00ff00; font-size: 1.3em; margin-top: 10px; border: 1px solid #00ff00; min-height: 40px; }
-        input { padding: 12px; width: 80%; font-size: 1.1em; border-radius: 5px; border: none; margin-bottom: 10px; }
+        #playground-img { max-width: 95vw; border: 5px solid #003366; margin-top: 20px; cursor: crosshair; }
+        #timer { font-size: 3.5em; color: #3399ff; font-family: monospace; font-weight: bold; }
+        #bericht-venster { background: rgba(0,0,0,0.8); padding: 15px; border-radius: 5px; color: #3399ff; font-size: 1.2em; margin-top: 10px; border: 2px solid #005ce6; min-height: 50px; }
+        #winnaar-display { font-size: 2em; color: #ffd700; background: rgba(0, 92, 230, 0.3); border: 2px solid #ffd700; padding: 15px; margin: 10px 0; display: none; border-radius: 10px; }
+        
+        input { padding: 12px; width: 80%; font-size: 1.1em; border-radius: 5px; border: 2px solid #005ce6; background: #001a33; color: white; margin-bottom: 10px; text-align: center; }
+        .label-text { font-size: 0.9em; color: #ffd700; font-weight: bold; display: block; margin-top: 10px; text-transform: uppercase; }
     </style>
 </head>
 <body>
 
-    <h1>OPSPORING VERMIST KIND</h1>
+    <h1> POLITIE OPSPORING </h1>
 
     <div id="setup-section">
         <div class="ui-box">
-            <h3>SYSTEEM LOGIN</h3>
-            <button class="btn" onclick="startApp('verbalisant')">UNIT 1: VERBALISANT (Melder)</button>
-            <button class="btn" onclick="startApp('collega')">UNIT 2: COLLEGA (Zoeker)</button>
+            <h3>DIENST LOGIN</h3>
+            <input type="text" id="user-name" placeholder="Uw voornaam...">
+            <br><br>
+            <button class="btn" onclick="probeerLogin('verbalisant')">UNIT 1: VERBALISANT</button>
+            <button class="btn" onclick="probeerLogin('collega')">UNIT 2: COLLEGA</button>
+            <p id="login-fout" style="color: #ff4747; font-weight: bold; margin-top: 10px;"></p>
         </div>
     </div>
 
     <div id="main-app" class="hidden">
+        <div id="winnaar-display"></div>
         <div id="verbalisant-ui" class="hidden">
             <div class="ui-box">
-                <h3>STAP 1: KIES HET KIND</h3>
-                <div class="target-grid">
-                    <button class="btn" onclick="kiesTarget(0, 'Glijbaan')">Glijbaan</button>
-                    <button class="btn" onclick="kiesTarget(1, 'Wipkip')">Wipkip</button>
-                    <button class="btn" onclick="kiesTarget(2, 'Blauwe Pet')">Blauwe Pet</button>
-                    <button class="btn" onclick="kiesTarget(3, 'Klimrek')">Klimrek</button>
-                    <button class="btn" onclick="kiesTarget(4, 'Draaimolen L')">Draaimolen L</button>
-                    <button class="btn" onclick="kiesTarget(5, 'Draaimolen R')">Draaimolen R</button>
-                    <button class="btn" onclick="kiesTarget(6, 'Wipwap L')">Wipwap L</button>
-                    <button class="btn" onclick="kiesTarget(7, 'Wipwap R')">Wipwap R</button>
-                    <button class="btn" onclick="kiesTarget(8, 'Zandbak')">Zandbak</button>
-                    <button class="btn" onclick="kiesTarget(9, 'Boom')">Boom</button>
-                </div>
-                <h3>STAP 2: SIGNALEMENT</h3>
-                <input type="text" id="input-tekst" placeholder="Beschrijf kleding/locatie...">
-                <button class="btn" style="background: #00ff00;" onclick="verstuurBericht()">VERSTUUR</button>
-                <p id="status-bericht" style="color: #ffd700;"></p>
+                <span class="label-text">1. INZETTID (SEC)</span>
+                <button id="t10" class="btn btn-time" onclick="setTimer(10)">10</button>
+                <button id="t15" class="btn btn-time btn-active" onclick="setTimer(15)">15</button>
+                <button id="t20" class="btn btn-time" onclick="setTimer(20)">20</button>
+                <span class="label-text">2. OBJECT VAN OPSPORING</span>
+                <div class="target-grid" id="target-buttons"></div>
+                <span class="label-text">3. DOORGEVEN SIGNALEMENT</span>
+                <input type="text" id="input-tekst" placeholder="Beschrijf locatie/kleding...">
+                <button class="btn" style="background: #005ce6; color: white; width: 85%; margin-top: 10px;" onclick="verstuurBericht()">ZEND MELDING</button>
+                <p id="status-bericht" style="color: #ffd700; font-weight: bold;"></p>
+                <button class="btn" style="background: #ff4747; color: white; margin-top: 20px;" onclick="logOut()">DIENST BEËINDIGEN (VRIJGAVEN)</button>
             </div>
         </div>
 
         <div id="collega-ui" class="hidden">
             <div class="ui-box">
-                <div id="timer">15.0</div>
-                <div id="bericht-venster">Wachten op verbalisant...</div>
+                <div id="timer">--</div>
+                <div id="bericht-venster">Wachten op bericht van meldkamer...</div>
             </div>
         </div>
 
@@ -63,9 +71,6 @@
     </div>
 
 <script>
-    // INSTELLINGEN
-    const SPEL_TIJD = 15.0; // Pas hier de tijd aan
-
     const firebaseConfig = {
         apiKey: "AIzaSyBOo2LzR1IBnsiBR2SCwPJABtaRv0tpKQ4",
         authDomain: "speeltuin-recherche.firebaseapp.com",
@@ -79,75 +84,123 @@
     const gameRef = db.ref('playground_recherche');
 
     const targets = [
-        { x: 670, y: 440 }, { x: 180, y: 750 }, { x: 170, y: 680 }, { x: 700, y: 350 },
-        { x: 550, y: 750 }, { x: 700, y: 750 }, { x: 150, y: 530 }, { x: 300, y: 510 },
-        { x: 350, y: 680 }, { x: 450, y: 250 }
+        { name: "Glijbaan", x: 670, y: 440 }, { name: "Wipkip", x: 180, y: 750 },
+        { name: "Blauwe Pet", x: 170, y: 680 }, { name: "Klimrek", x: 700, y: 350 },
+        { name: "Draaimolen L", x: 550, y: 750 }, { name: "Draaimolen R", x: 700, y: 750 },
+        { name: "Wipwap L", x: 150, y: 530 }, { name: "Wipwap R", x: 300, y: 510 },
+        { name: "Zandbak", x: 350, y: 680 }, { name: "Boom", x: 450, y: 250 }
     ];
 
+    let mijnNaam = '';
     let huidigeRol = '';
     let actiefTargetIndex = -1;
     let timerRunning = false;
     let countdown;
+    let gekozenTijd = 15;
 
-    document.getElementById('timer').innerText = SPEL_TIJD.toFixed(1);
+    // Genereer knoppen
+    const btnContainer = document.getElementById('target-buttons');
+    targets.forEach((t, index) => {
+        const b = document.createElement('button');
+        b.className = 'btn';
+        b.innerText = t.name;
+        b.onclick = () => kiesTarget(index, t.name);
+        btnContainer.appendChild(b);
+    });
+
+    function probeerLogin(rol) {
+        mijnNaam = document.getElementById('user-name').value;
+        if(!mijnNaam) { alert("Vul uw naam in."); return; }
+
+        if(rol === 'verbalisant') {
+            gameRef.child('active_verbalisant').get().then((snap) => {
+                if(snap.exists() && snap.val() !== mijnNaam) {
+                    document.getElementById('login-fout').innerText = "Jammer joh, er is al een Verbalisant actief. Straks opnieuw proberen!";
+                } else {
+                    gameRef.update({ active_verbalisant: mijnNaam });
+                    startApp('verbalisant');
+                }
+            });
+        } else {
+            startApp('collega');
+        }
+    }
 
     function startApp(rol) {
         huidigeRol = rol;
         document.getElementById('setup-section').classList.add('hidden');
         document.getElementById('main-app').classList.remove('hidden');
-        if(rol === 'verbalisant') {
-            document.getElementById('verbalisant-ui').classList.remove('hidden');
-        } else {
-            document.getElementById('collega-ui').classList.remove('hidden');
-            luisterNaarUpdates();
+        if(rol === 'verbalisant') document.getElementById('verbalisant-ui').classList.remove('hidden');
+        else document.getElementById('collega-ui').classList.remove('hidden');
+        luisterNaarUpdates();
+    }
+
+    function logOut() {
+        if(confirm("Wilt u de rol van Verbalisant vrijgeven?")) {
+            gameRef.child('active_verbalisant').remove();
+            location.reload();
         }
+    }
+
+    // De rest van de functies (setTimer, kiesTarget, verstuurBericht, luisterNaarUpdates, etc.) 
+    // blijven hetzelfde als in de vorige versie...
+    function setTimer(sec) {
+        gekozenTijd = sec;
+        document.querySelectorAll('.btn-time').forEach(b => b.classList.remove('btn-active'));
+        document.getElementById('t' + sec).classList.add('btn-active');
     }
 
     function kiesTarget(index, naam) {
         actiefTargetIndex = index;
-        document.getElementById('status-bericht').innerText = "Kind geselecteerd: " + naam;
-        gameRef.update({ targetId: index, start: false });
+        document.getElementById('status-bericht').innerText = "DOELWIT: " + naam;
+        gameRef.update({ targetId: index, start: false, winnaar: null });
     }
 
     function verstuurBericht() {
         const tekst = document.getElementById('input-tekst').value;
-        if(actiefTargetIndex === -1) { alert("Kies eerst een kind!"); return; }
-        gameRef.update({ tekst: tekst, start: true });
-        document.getElementById('status-bericht').innerText = "MELDING VERSTUURD!";
+        if(actiefTargetIndex === -1) { alert("Selecteer eerst een doelwit."); return; }
+        gameRef.update({ tekst: tekst, start: true, tijd: gekozenTijd, v_naam: mijnNaam, winnaar: null });
     }
 
     function luisterNaarUpdates() {
         gameRef.on('value', (snap) => {
             const data = snap.val();
             if(!data) return;
-            if(data.tekst) document.getElementById('bericht-venster').innerText = "SIGNALEMENT: " + data.tekst;
+            if(data.tekst) document.getElementById('bericht-venster').innerHTML = `<strong>MELDING ${data.v_naam}:</strong> ${data.tekst}`;
+            if(data.winnaar) {
+                const display = document.getElementById('winnaar-display');
+                display.innerHTML = `🏆 DOELWIT GEVONDEN DOOR: ${data.winnaar}`;
+                display.style.display = 'block';
+                clearInterval(countdown);
+                timerRunning = false;
+            }
             actiefTargetIndex = data.targetId;
-            if(data.start && !timerRunning) startTimer();
-            if(!data.start) resetTimerUI();
+            if(data.start && !timerRunning && !data.winnaar) startTimer(data.tijd);
+            if(!data.start && !data.winnaar) {
+                resetTimerUI(data.tijd || 15);
+                document.getElementById('winnaar-display').style.display = 'none';
+            }
         });
     }
 
-    function startTimer() {
+    function startTimer(duur) {
         timerRunning = true;
-        let t = SPEL_TIJD;
+        let t = duur;
         countdown = setInterval(() => {
             t -= 0.1;
-            document.getElementById('timer').innerText = t.toFixed(1);
-            if(t <= 0) stopSpel("TE LAAT!");
+            if(document.getElementById('timer')) document.getElementById('timer').innerText = t.toFixed(1);
+            if(t <= 0) {
+                clearInterval(countdown);
+                timerRunning = false;
+                if(huidigeRol === 'collega') alert("TIJD VERSTREKEN");
+            }
         }, 100);
     }
 
-    function resetTimerUI() {
+    function resetTimerUI(duur) {
         clearInterval(countdown);
         timerRunning = false;
-        document.getElementById('timer').innerText = SPEL_TIJD.toFixed(1);
-    }
-
-    function stopSpel(m) {
-        clearInterval(countdown);
-        timerRunning = false;
-        alert(m);
-        gameRef.update({ start: false, tekst: "" });
+        if(document.getElementById('timer')) document.getElementById('timer').innerText = parseFloat(duur).toFixed(1);
     }
 
     function checkKlik(event) {
@@ -160,7 +213,7 @@
         const klikY = (event.clientY - rect.top) * scaleY;
         const doel = targets[actiefTargetIndex];
         const afstand = Math.sqrt(Math.pow(klikX - doel.x, 2) + Math.pow(klikY - doel.y, 2));
-        if(afstand < 150) stopSpel("GEVONDEN!");
+        if(afstand < 120) gameRef.update({ winnaar: mijnNaam, start: false });
     }
 </script>
 </body>
