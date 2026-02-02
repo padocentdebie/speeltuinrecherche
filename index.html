@@ -46,6 +46,10 @@
             <br><br>
             <button class="btn" onclick="probeerLogin('verbalisant')">UNIT 1: DOCENT (VERBALISANT)</button>
             <button class="btn" onclick="probeerLogin('collega')">UNIT 2: RECHERCHEUR (COLLEGA)</button>
+            
+            <hr style="border: 0.5px solid #005ce6; margin: 20px 0;">
+            <button class="btn btn-danger" style="width: auto; font-size: 0.7em;" onclick="volledigeDatabaseWissen()">VOLLEDIGE DATABASE WISSEN</button>
+            
             <p id="login-fout" style="color: #ff4747; font-weight: bold; margin-top: 10px;"></p>
         </div>
     </div>
@@ -55,7 +59,7 @@
         
         <div id="verbalisant-ui" class="hidden">
             <div class="ui-box">
-                <span class="label-text">1. INZETTID (SEC)</span>
+                <span class="label-text">1. INZETTIJD (SEC)</span>
                 <button id="t10" class="btn btn-time" onclick="setTimer(10)">10</button>
                 <button id="t15" class="btn btn-time btn-active" onclick="setTimer(15)">15</button>
                 <button id="t20" class="btn btn-time" onclick="setTimer(20)">20</button>
@@ -75,7 +79,7 @@
                 
                 <p id="status-bericht" style="color: #ffd700; font-weight: bold;"></p>
                 <hr style="border: 0.5px solid #005ce6; margin: 20px 0;">
-                <button class="btn btn-danger" onclick="hardReset()">VOLLEDIGE SPEL-RESET</button>
+                <button class="btn btn-danger" onclick="hardReset()">SPEL-RESET (NIEUWE RONDE)</button>
                 <button class="btn" style="background: #444; color: white;" onclick="logOut()">LOG OUT</button>
             </div>
         </div>
@@ -84,6 +88,7 @@
             <div class="ui-box">
                 <div id="timer">--</div>
                 <div id="bericht-venster">Wachten op bericht van meldkamer...</div>
+                <button class="btn" style="background: #444; color: white; margin-top: 10px;" onclick="logOut()">LOG OUT</button>
             </div>
         </div>
 
@@ -93,6 +98,7 @@
     </div>
 
 <script>
+    // --- FIREBASE CONFIGURATIE ---
     const firebaseConfig = {
         apiKey: "AIzaSyBOo2LzR1IBnsiBR2SCwPJABtaRv0tpKQ4",
         authDomain: "speeltuin-recherche.firebaseapp.com",
@@ -105,6 +111,7 @@
     const db = firebase.database();
     const gameRef = db.ref('playground_recherche');
 
+    // --- SPEL DATA ---
     const targets = [
         { name: "Glijbaan", x: 670, y: 440 }, { name: "Wipkip", x: 180, y: 750 },
         { name: "Blauwe Pet", x: 170, y: 680 }, { name: "Klimrek", x: 700, y: 350 },
@@ -120,6 +127,7 @@
     let countdown;
     let gekozenTijd = 15;
 
+    // --- INITIALISATIE ---
     const btnContainer = document.getElementById('target-buttons');
     targets.forEach((t, index) => {
         const b = document.createElement('button');
@@ -129,12 +137,31 @@
         btnContainer.appendChild(b);
     });
 
+    // --- LOGICA FUNCTIES ---
+
+    function volledigeDatabaseWissen() {
+        if (confirm("WAARSCHUWING: Dit wist alle gegevens in de database. Iedereen moet opnieuw inloggen. Doorgaan?")) {
+            gameRef.set({
+                active_verbalisant: null,
+                start: false,
+                winnaar: null,
+                tekst: "",
+                targetId: -1,
+                tijd: 15,
+                v_naam: ""
+            }).then(() => {
+                alert("Database is gereset.");
+                location.reload();
+            });
+        }
+    }
+
     function probeerLogin(rol) {
         mijnNaam = document.getElementById('user-name').value;
         if(!mijnNaam) { alert("Vul eerst uw naam in."); return; }
         if(rol === 'verbalisant') {
             gameRef.child('active_verbalisant').get().then((snap) => {
-                if(snap.exists() && snap.val() !== mijnNaam) {
+                if(snap.exists() && snap.val() && snap.val() !== mijnNaam) {
                     document.getElementById('login-fout').innerText = "Er is al een Docent actief!";
                 } else {
                     gameRef.update({ active_verbalisant: mijnNaam });
@@ -163,7 +190,7 @@
     function hardReset() {
         gameRef.update({ start: false, winnaar: null, tekst: "", targetId: -1, tijd: 15 });
         document.getElementById('input-tekst').value = "";
-        document.getElementById('status-bericht').innerText = "SYSTEEM GERESET";
+        document.getElementById('status-bericht').innerText = "RONDE GERESET";
     }
 
     function setTimer(sec) {
@@ -204,7 +231,6 @@
                 winDisplay.style.display = 'block';
                 clearInterval(countdown);
                 timerRunning = false;
-                if(huidigeRol === 'verbalisant') setTimeout(() => { if(data.winnaar) hardReset(); }, 8000);
             } else {
                 winDisplay.style.display = 'none';
             }
@@ -243,7 +269,10 @@
         const scaleY = img.naturalHeight / rect.height;
         const kX = (event.clientX - rect.left) * scaleX;
         const kY = (event.clientY - rect.top) * scaleY;
+        
+        if(actiefTargetIndex === -1) return;
         const doel = targets[actiefTargetIndex];
+        
         if(Math.sqrt(Math.pow(kX - doel.x, 2) + Math.pow(kY - doel.y, 2)) < 110) {
             gameRef.update({ winnaar: mijnNaam, start: false });
         }
