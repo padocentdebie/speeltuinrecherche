@@ -7,24 +7,32 @@
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
     <style>
         body { font-family: 'Segoe UI', sans-serif; background-color: #001a33; color: white; text-align: center; padding: 20px; margin: 0; }
-        .ui-box { background: rgba(0, 40, 80, 0.8); padding: 20px; border-radius: 10px; display: inline-block; border: 2px solid #005ce6; min-width: 350px; margin-bottom: 20px; box-shadow: 0 0 15px rgba(0, 92, 230, 0.5); }
+        .ui-box { background: rgba(0, 40, 80, 0.8); padding: 20px; border-radius: 10px; display: inline-block; border: 2px solid #005ce6; min-width: 350px; margin-bottom: 20px; box-shadow: 0 0 15px rgba(0, 92, 230, 0.5); vertical-align: top; }
         
         h1::before, h1::after { content: "🟦"; animation: flash 0.8s infinite; }
         @keyframes flash { 0% { opacity: 1; } 50% { opacity: 0.3; } 100% { opacity: 1; } }
 
-        .btn { background: #ffd700; color: #001a33; padding: 10px 15px; margin: 3px; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; text-transform: uppercase; font-size: 0.85em; }
+        .btn { background: #ffd700; color: #001a33; padding: 10px 15px; margin: 3px; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; text-transform: uppercase; font-size: 0.85em; transition: 0.2s; }
+        .btn:hover { background: #fff; }
         .btn-time { background: #003366; color: white; border: 1px solid #005ce6; width: 60px; }
-        .btn-active { background: #005ce6 !important; color: white; }
+        .btn-active { background: #005ce6 !important; color: white; border: 1px solid #ffd700; }
+        .btn-danger { background: #ff4747; color: white; margin-top: 10px; width: 85%; }
         
         .target-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 15px; }
         .hidden { display: none !important; }
         #playground-img { max-width: 95vw; border: 5px solid #003366; margin-top: 20px; cursor: crosshair; }
         #timer { font-size: 3.5em; color: #3399ff; font-family: monospace; font-weight: bold; }
-        #bericht-venster { background: rgba(0,0,0,0.8); padding: 15px; border-radius: 5px; color: #3399ff; font-size: 1.2em; margin-top: 10px; border: 2px solid #005ce6; min-height: 50px; }
+        
+        #bericht-venster { background: rgba(0,0,0,0.8); padding: 15px; border-radius: 5px; color: #3399ff; font-size: 1.2em; margin-top: 10px; border: 2px solid #005ce6; min-height: 50px; transition: 0.3s; }
+        .nieuw-bericht { animation: pulse-border 1.5s infinite; }
+        @keyframes pulse-border { 0% { border-color: #005ce6; } 50% { border-color: #ffd700; } 100% { border-color: #005ce6; } }
+
         #winnaar-display { font-size: 2em; color: #ffd700; background: rgba(0, 92, 230, 0.3); border: 2px solid #ffd700; padding: 15px; margin: 10px 0; display: none; border-radius: 10px; }
         
         input { padding: 12px; width: 80%; font-size: 1.1em; border-radius: 5px; border: 2px solid #005ce6; background: #001a33; color: white; margin-bottom: 10px; text-align: center; }
         .label-text { font-size: 0.9em; color: #ffd700; font-weight: bold; display: block; margin-top: 10px; text-transform: uppercase; }
+
+        .protocol-box { text-align: left; background: rgba(0,0,0,0.4); padding: 12px; border-radius: 5px; margin-top: 15px; border-left: 4px solid #ffd700; font-size: 0.85em; line-height: 1.4; }
     </style>
 </head>
 <body>
@@ -36,27 +44,39 @@
             <h3>DIENST LOGIN</h3>
             <input type="text" id="user-name" placeholder="Uw voornaam...">
             <br><br>
-            <button class="btn" onclick="probeerLogin('verbalisant')">UNIT 1: VERBALISANT</button>
-            <button class="btn" onclick="probeerLogin('collega')">UNIT 2: COLLEGA</button>
+            <button class="btn" onclick="probeerLogin('verbalisant')">UNIT 1: DOCENT (VERBALISANT)</button>
+            <button class="btn" onclick="probeerLogin('collega')">UNIT 2: RECHERCHEUR (COLLEGA)</button>
             <p id="login-fout" style="color: #ff4747; font-weight: bold; margin-top: 10px;"></p>
         </div>
     </div>
 
     <div id="main-app" class="hidden">
         <div id="winnaar-display"></div>
+        
         <div id="verbalisant-ui" class="hidden">
             <div class="ui-box">
                 <span class="label-text">1. INZETTID (SEC)</span>
                 <button id="t10" class="btn btn-time" onclick="setTimer(10)">10</button>
                 <button id="t15" class="btn btn-time btn-active" onclick="setTimer(15)">15</button>
                 <button id="t20" class="btn btn-time" onclick="setTimer(20)">20</button>
+                
                 <span class="label-text">2. OBJECT VAN OPSPORING</span>
                 <div class="target-grid" id="target-buttons"></div>
+                
+                <div class="protocol-box">
+                    <strong style="color: #ffd700;">PROTOCOL SIGNALEMENT:</strong><br>
+                    <span style="color: #00ccff;">• Onveranderlijk:</span> Geslacht, leeftijd, lengte, haarkleur, ogen, bijzonderheden gezicht.<br>
+                    <span style="color: #00ccff;">• Veranderlijk:</span> Pet, bril, beugel, bovenkleding (type/kleur), schoeisel.
+                </div>
+
                 <span class="label-text">3. DOORGEVEN SIGNALEMENT</span>
-                <input type="text" id="input-tekst" placeholder="Beschrijf locatie/kleding...">
+                <input type="text" id="input-tekst" placeholder="Beschrijf volgens protocol...">
                 <button class="btn" style="background: #005ce6; color: white; width: 85%; margin-top: 10px;" onclick="verstuurBericht()">ZEND MELDING</button>
+                
                 <p id="status-bericht" style="color: #ffd700; font-weight: bold;"></p>
-                <button class="btn" style="background: #ff4747; color: white; margin-top: 20px;" onclick="logOut()">DIENST BEËINDIGEN (VRIJGAVEN)</button>
+                <hr style="border: 0.5px solid #005ce6; margin: 20px 0;">
+                <button class="btn btn-danger" onclick="hardReset()">VOLLEDIGE SPEL-RESET</button>
+                <button class="btn" style="background: #444; color: white;" onclick="logOut()">LOG OUT</button>
             </div>
         </div>
 
@@ -67,7 +87,9 @@
             </div>
         </div>
 
-        <img src="speeltuin.jpg" id="playground-img" onclick="checkKlik(event)">
+        <div>
+            <img src="speeltuin.jpg" id="playground-img" onclick="checkKlik(event)">
+        </div>
     </div>
 
 <script>
@@ -98,7 +120,6 @@
     let countdown;
     let gekozenTijd = 15;
 
-    // Genereer knoppen
     const btnContainer = document.getElementById('target-buttons');
     targets.forEach((t, index) => {
         const b = document.createElement('button');
@@ -110,20 +131,17 @@
 
     function probeerLogin(rol) {
         mijnNaam = document.getElementById('user-name').value;
-        if(!mijnNaam) { alert("Vul uw naam in."); return; }
-
+        if(!mijnNaam) { alert("Vul eerst uw naam in."); return; }
         if(rol === 'verbalisant') {
             gameRef.child('active_verbalisant').get().then((snap) => {
                 if(snap.exists() && snap.val() !== mijnNaam) {
-                    document.getElementById('login-fout').innerText = "Jammer joh, er is al een Verbalisant actief. Straks opnieuw proberen!";
+                    document.getElementById('login-fout').innerText = "Er is al een Docent actief!";
                 } else {
                     gameRef.update({ active_verbalisant: mijnNaam });
                     startApp('verbalisant');
                 }
             });
-        } else {
-            startApp('collega');
-        }
+        } else { startApp('collega'); }
     }
 
     function startApp(rol) {
@@ -136,14 +154,18 @@
     }
 
     function logOut() {
-        if(confirm("Wilt u de rol van Verbalisant vrijgeven?")) {
-            gameRef.child('active_verbalisant').remove();
+        if(confirm("Dienst beëindigen?")) {
+            if(huidigeRol === 'verbalisant') gameRef.child('active_verbalisant').remove();
             location.reload();
         }
     }
 
-    // De rest van de functies (setTimer, kiesTarget, verstuurBericht, luisterNaarUpdates, etc.) 
-    // blijven hetzelfde als in de vorige versie...
+    function hardReset() {
+        gameRef.update({ start: false, winnaar: null, tekst: "", targetId: -1, tijd: 15 });
+        document.getElementById('input-tekst').value = "";
+        document.getElementById('status-bericht').innerText = "SYSTEEM GERESET";
+    }
+
     function setTimer(sec) {
         gekozenTijd = sec;
         document.querySelectorAll('.btn-time').forEach(b => b.classList.remove('btn-active'));
@@ -158,7 +180,7 @@
 
     function verstuurBericht() {
         const tekst = document.getElementById('input-tekst').value;
-        if(actiefTargetIndex === -1) { alert("Selecteer eerst een doelwit."); return; }
+        if(actiefTargetIndex === -1) { alert("Selecteer eerst een object!"); return; }
         gameRef.update({ tekst: tekst, start: true, tijd: gekozenTijd, v_naam: mijnNaam, winnaar: null });
     }
 
@@ -166,20 +188,30 @@
         gameRef.on('value', (snap) => {
             const data = snap.val();
             if(!data) return;
-            if(data.tekst) document.getElementById('bericht-venster').innerHTML = `<strong>MELDING ${data.v_naam}:</strong> ${data.tekst}`;
+
+            const venster = document.getElementById('bericht-venster');
+            if(data.tekst) {
+                venster.innerHTML = `<strong>MELDING ${data.v_naam}:</strong><br>${data.tekst}`;
+                if(data.start) venster.classList.add('nieuw-bericht');
+            } else {
+                venster.innerHTML = "Wachten op melding...";
+                venster.classList.remove('nieuw-bericht');
+            }
+
+            const winDisplay = document.getElementById('winnaar-display');
             if(data.winnaar) {
-                const display = document.getElementById('winnaar-display');
-                display.innerHTML = `🏆 DOELWIT GEVONDEN DOOR: ${data.winnaar}`;
-                display.style.display = 'block';
+                winDisplay.innerHTML = `🏆 DOELWIT GEVONDEN DOOR: ${data.winnaar}`;
+                winDisplay.style.display = 'block';
                 clearInterval(countdown);
                 timerRunning = false;
+                if(huidigeRol === 'verbalisant') setTimeout(() => { if(data.winnaar) hardReset(); }, 8000);
+            } else {
+                winDisplay.style.display = 'none';
             }
+
             actiefTargetIndex = data.targetId;
             if(data.start && !timerRunning && !data.winnaar) startTimer(data.tijd);
-            if(!data.start && !data.winnaar) {
-                resetTimerUI(data.tijd || 15);
-                document.getElementById('winnaar-display').style.display = 'none';
-            }
+            if(!data.start) { clearInterval(countdown); timerRunning = false; resetTimerUI(data.tijd || 15); }
         });
     }
 
@@ -188,19 +220,19 @@
         let t = duur;
         countdown = setInterval(() => {
             t -= 0.1;
-            if(document.getElementById('timer')) document.getElementById('timer').innerText = t.toFixed(1);
+            const el = document.getElementById('timer');
+            if(el) el.innerText = t.toFixed(1);
             if(t <= 0) {
                 clearInterval(countdown);
                 timerRunning = false;
-                if(huidigeRol === 'collega') alert("TIJD VERSTREKEN");
+                if(huidigeRol === 'collega') alert("DOELWIT ONTSNAPT! (Tijd om)");
             }
         }, 100);
     }
 
     function resetTimerUI(duur) {
-        clearInterval(countdown);
-        timerRunning = false;
-        if(document.getElementById('timer')) document.getElementById('timer').innerText = parseFloat(duur).toFixed(1);
+        const el = document.getElementById('timer');
+        if(el) el.innerText = parseFloat(duur).toFixed(1);
     }
 
     function checkKlik(event) {
@@ -209,11 +241,12 @@
         const rect = img.getBoundingClientRect();
         const scaleX = img.naturalWidth / rect.width;
         const scaleY = img.naturalHeight / rect.height;
-        const klikX = (event.clientX - rect.left) * scaleX;
-        const klikY = (event.clientY - rect.top) * scaleY;
+        const kX = (event.clientX - rect.left) * scaleX;
+        const kY = (event.clientY - rect.top) * scaleY;
         const doel = targets[actiefTargetIndex];
-        const afstand = Math.sqrt(Math.pow(klikX - doel.x, 2) + Math.pow(klikY - doel.y, 2));
-        if(afstand < 120) gameRef.update({ winnaar: mijnNaam, start: false });
+        if(Math.sqrt(Math.pow(kX - doel.x, 2) + Math.pow(kY - doel.y, 2)) < 110) {
+            gameRef.update({ winnaar: mijnNaam, start: false });
+        }
     }
 </script>
 </body>
